@@ -1,20 +1,22 @@
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
-  IsAlpha,
   IsArray,
   IsInt,
   IsNotEmpty,
   IsNumber,
   IsPositive,
   IsString,
+  IsUUID,
+  Matches,
   MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
+import { ExistUserById } from 'src/usuarios/validacao/existe-usuario-id.validator';
 
 export class CadastraProdutoRequest {
-  @IsAlpha('pt-BR', { message: 'Nome inválido ou não informado.' })
+  @Matches(/^[a-zA-Z ]*$/, { message: 'Nome inválido ou não informado.' })
   @IsNotEmpty({ message: 'Nome inválido ou não informado' })
   public nome: string;
 
@@ -48,23 +50,28 @@ export class CadastraProdutoRequest {
     message: 'Caracteristicas inválidas. Lista precisa ter no mínimo 3 valores',
   })
   @ValidateNested({ each: true })
-  @Type(() => CaracteristicasProduto)
-  public caracteristicas: CaracteristicasProduto[];
+  @Type(() => CaracteristicasProdutoRequest)
+  public caracteristicas: CaracteristicasProdutoRequest[];
 
   @IsArray({ message: 'Imagens do produto inválida ou não informada' })
   @ArrayMinSize(1, {
     message: 'Imagens inválidas. Lista precisa ter no mínimo 1 valor',
   })
   @ValidateNested({ each: true })
-  @Type(() => ImagensProduto)
-  public imagens: ImagensProduto[];
+  @Type(() => ImagensProdutoRequest)
+  public imagens: ImagensProdutoRequest[];
 
   @IsString({ message: 'Categoria inválida ou não informada' })
   @IsNotEmpty({ message: 'Categoria inválida ou não informada' })
   public categoria: string;
+
+  @IsUUID('all', { message: 'ID do usuário inválido. UUID inválido.' })
+  @IsNotEmpty({ message: 'ID do usuário inválido ou não informado.' })
+  @ExistUserById({ message: 'ID do usuário inválido. Usuário não existe.' })
+  public usuarioId: string;
 }
 
-class CaracteristicasProduto {
+class CaracteristicasProdutoRequest {
   @IsString({ message: 'Nome da característica inválido ou não informado' })
   @IsNotEmpty({ message: 'Nome da característica inválido ou não informado' })
   public nome: string;
@@ -78,7 +85,7 @@ class CaracteristicasProduto {
   public descricao: string;
 }
 
-class ImagensProduto {
+class ImagensProdutoRequest {
   @IsString({ message: 'Url da imagem inválido ou não informado' })
   @IsNotEmpty({ message: 'Url da imagem inválido ou não informado' })
   public url: string;
