@@ -8,7 +8,7 @@ export class ProdutosController {
 
   @Post()
   public async criarProduto(@Body() produtoRequest: CadastraProdutoRequest) {
-    this.repository.salvar(produtoRequest);
+    return this.repository.salvar(produtoRequest);
   }
 
   @Get()
