@@ -1,18 +1,36 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import { CadastraUsuarioRequest } from './dto/CadastraUsuarioRequest';
-import { UsuariosRepository } from './usuarios.repository';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { AtualizaUsuarioRequest } from './dto/AtualizaUsuario.request';
+import { CadastraUsuarioRequest } from './dto/CadastraUsuario.request';
+import { UsuarioResponse } from './dto/Usuario.response';
+import { UsuarioEntity } from './usuario.entity';
+import { UsuariosService } from './usuarios.service';
 
 @Controller('/usuarios')
 export class UsuariosController {
-  constructor(private repository: UsuariosRepository) {}
-
-  @Post()
-  public async criarUsuarios(@Body() usuarioRequest: CadastraUsuarioRequest) {
-    return this.repository.salvar(usuarioRequest);
-  }
+  constructor(private service: UsuariosService) {}
 
   @Get()
-  public async listarUsuarios() {
-    return this.repository.listarUsuarios();
+  public async listarUsuarios(): Promise<UsuarioResponse[]> {
+    return this.service.listar();
+  }
+
+  @Post()
+  public async cadastrarUsuario(
+    @Body() request: CadastraUsuarioRequest,
+  ): Promise<UsuarioResponse> {
+    return this.service.cadastrar(request);
+  }
+
+  @Patch(':id')
+  public async atualizarUsuario(
+    @Param('id') id: string,
+    @Body() request: AtualizaUsuarioRequest,
+  ): Promise<UsuarioEntity> {
+    return this.service.atualizar(id, request);
+  }
+
+  @Delete(':id')
+  public async removerUsuario(@Param('id') id: string): Promise<UsuarioEntity> {
+    return this.service.remover(id);
   }
 }
