@@ -1,4 +1,4 @@
-export class Usuario {
+export class UsuarioEntity {
   public id: string;
   public nome: string;
   public email: string;
