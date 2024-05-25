@@ -13,6 +13,11 @@ export class ProdutosController {
     return this.service.listar();
   }
 
+  @Get(':id')
+  public async consulta(@Param('id') id: string): Promise<ProdutoResponse> {
+    return this.service.consultar(id);
+  }
+
   @Post()
   public async cadastrarProduto(
     @Body() request: CadastraProdutoRequest,

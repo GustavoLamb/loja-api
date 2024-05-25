@@ -1,47 +1,66 @@
 import { Injectable } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
+import { InjectRepository } from '@nestjs/typeorm';
+import { plainToInstance } from 'class-transformer';
+import { Repository } from 'typeorm';
 import { AtualizaUsuarioRequest } from './dto/AtualizaUsuario.request';
 import { CadastraUsuarioRequest } from './dto/CadastraUsuario.request';
 import { UsuarioResponse } from './dto/Usuario.response';
 import { UsuarioEntity } from './usuario.entity';
-import { UsuariosRepository } from './usuarios.repository';
 
 @Injectable()
 export class UsuariosService {
-  constructor(private repository: UsuariosRepository) {}
+  constructor(
+    @InjectRepository(UsuarioEntity)
+    private readonly usuariosRepository: Repository<UsuarioEntity>,
+  ) {}
+
+  public async listar(): Promise<UsuarioResponse[]> {
+    const usuariosSalvos: UsuarioEntity[] = await this.usuariosRepository.find();
+    return usuariosSalvos.map((usuario) => this.mapToRespose(usuario));
+  }
+
+  public async consultar(id: string): Promise<UsuarioResponse> {
+    const usuario = await this.consultarPorId(id);
+
+    return this.mapToRespose(usuario);
+  }
 
   public async cadastrar(request: CadastraUsuarioRequest): Promise<UsuarioResponse> {
-    const usuario = this.mapEntity(request);
+    const usuario = plainToInstance(UsuarioEntity, request);
 
-    this.repository.salvar(usuario);
+    this.usuariosRepository.save(usuario);
 
-    return new UsuarioResponse(usuario.id, usuario.nome);
+    return this.mapToRespose(usuario);
   }
 
   public async atualizar(
     id: string,
     request: AtualizaUsuarioRequest,
-  ): Promise<UsuarioEntity> {
-    return await this.repository.atualizar(id, request);
+  ): Promise<UsuarioResponse> {
+    await this.usuariosRepository.update(id, request);
+
+    return this.consultar(id);
   }
 
-  public async remover(id: string): Promise<UsuarioEntity> {
-    return this.repository.remover(id);
+  public async remover(id: string): Promise<UsuarioResponse> {
+    const usuario = await this.consultarPorId(id);
+
+    this.usuariosRepository.delete(id);
+
+    return this.mapToRespose(usuario);
   }
 
-  public async listar(): Promise<UsuarioResponse[]> {
-    const usuariosSalvos: UsuarioEntity[] = await this.repository.listar();
-    return usuariosSalvos.map((usuario) => new UsuarioResponse(usuario.id, usuario.nome));
+  private async consultarPorId(id: string): Promise<UsuarioEntity> {
+    const possivelUsuario = this.usuariosRepository.findOneBy({ id: id });
+
+    if (!possivelUsuario) {
+      throw new Error('Usuário não existe');
+    }
+
+    return possivelUsuario;
   }
 
-  private mapEntity(request: CadastraUsuarioRequest): UsuarioEntity {
-    const usuario = new UsuarioEntity();
-    usuario.email = request.email;
-    usuario.senha = request.senha;
-    usuario.nome = request.nome;
-    usuario.idade = request.idade;
-    usuario.id = uuid();
-
-    return usuario;
+  private mapToRespose(entity: UsuarioEntity): UsuarioResponse {
+    return plainToInstance(UsuarioResponse, entity, { excludeExtraneousValues: true });
   }
 }
