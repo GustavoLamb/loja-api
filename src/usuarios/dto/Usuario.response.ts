@@ -1,6 +1,12 @@
+import { Expose } from 'class-transformer';
+
 export class UsuarioResponse {
-  constructor(
-    readonly id: string,
-    readonly nome: string,
-  ) {}
+  @Expose()
+  public readonly id: string;
+
+  @Expose()
+  public readonly nome: string;
+
+  @Expose()
+  public readonly idade: number;
 }

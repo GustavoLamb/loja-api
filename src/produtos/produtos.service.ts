@@ -1,61 +1,66 @@
 import { Injectable } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
+import { InjectRepository } from '@nestjs/typeorm';
+import { plainToClass, plainToInstance } from 'class-transformer';
+import { UsuarioEntity } from 'src/usuarios/usuario.entity';
+import { Repository } from 'typeorm';
 import { AtualizaProdutoRequest } from './dto/AtualizaProduto.request';
 import { CadastraProdutoRequest } from './dto/CadastraProduto.request';
 import { ProdutoResponse } from './dto/Produto.response';
 import { ProdutoEntity } from './produto.entity';
-import { ProdutosRepository } from './produtos.repository';
 
 @Injectable()
 export class ProdutosSerivce {
-  constructor(private repository: ProdutosRepository) {}
+  constructor(
+    @InjectRepository(ProdutoEntity)
+    private readonly produtoRepository: Repository<ProdutoEntity>,
+  ) {}
+
+  public async listar(): Promise<ProdutoResponse[]> {
+    const produtos = await this.produtoRepository.find();
+
+    return produtos.map((produto) => this.mapResponse(produto));
+  }
+
+  public async consultar(id: string): Promise<ProdutoResponse> {
+    return this.mapResponse(await this.consultarPorId(id));
+  }
 
   public async salvar(request: CadastraProdutoRequest): Promise<ProdutoResponse> {
-    const produto = this.mapEntity(request);
+    const produto = plainToClass(ProdutoEntity, request);
+    produto.usuario = { id: request.usuarioId } as UsuarioEntity;
 
-    this.repository.salvar(produto);
+    this.produtoRepository.save(produto);
 
-    return new ProdutoResponse(
-      produto.id,
-      produto.nome,
-      produto.valor,
-      produto.usuarioId,
-    );
+    return this.mapResponse(produto);
   }
 
   public async atualizar(
     id: string,
     request: AtualizaProdutoRequest,
   ): Promise<ProdutoResponse> {
-    return this.mapResponse(await this.repository.atualizar(id, request));
+    await this.produtoRepository.update(id, request);
+    return this.consultar(id);
   }
 
   public async remover(id: string): Promise<ProdutoResponse> {
-    return this.mapResponse(await this.repository.remover(id));
+    const produto = await this.consultarPorId(id);
+
+    this.produtoRepository.delete(id);
+
+    return this.mapResponse(produto);
   }
 
-  public async listar(): Promise<ProdutoResponse[]> {
-    const produtos = await this.repository.listar();
-    return produtos.map((produto) => this.mapResponse(produto));
+  private async consultarPorId(id: string): Promise<ProdutoEntity> {
+    const possivelProduto = await this.produtoRepository.findOneBy({ id: id });
+
+    if (!possivelProduto) {
+      throw new Error('Produto não encontrado');
+    }
+
+    return possivelProduto;
   }
 
   private mapResponse(entity: ProdutoEntity) {
-    return new ProdutoResponse(entity.id, entity.nome, entity.valor, entity.usuarioId);
-  }
-
-  private mapEntity(request: CadastraProdutoRequest) {
-    const produto = new ProdutoEntity();
-
-    produto.nome = request.nome;
-    produto.valor = request.valor;
-    produto.quantidadeDisponivel = request.quantidadeDisponivel;
-    produto.descricao = request.descricao;
-    produto.caracteristicas = request.caracteristicas;
-    produto.imagens = request.imagens;
-    produto.categoria = request.categoria;
-    produto.usuarioId = request.usuarioId;
-    produto.id = uuid();
-
-    return produto;
+    return plainToInstance(ProdutoResponse, entity, { excludeExtraneousValues: true });
   }
 }

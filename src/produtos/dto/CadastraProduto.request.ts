@@ -32,12 +32,12 @@ export class CadastraProdutoRequest {
   public valor: number;
 
   @IsInt({
-    message: 'Quantidade disponível inválida. Valor precisa ser inteiro',
+    message: 'Quantidade no estoque inválida. Valor precisa ser inteiro',
   })
   @Min(0, {
-    message: 'Quantidade disponível inválida. Valor precisa ser no mínimo 0',
+    message: 'Quantidade no estoque inválida. Valor precisa ser no mínimo 0',
   })
-  public quantidadeDisponivel: number;
+  public quantidadeEstoque: number;
 
   @IsNotEmpty({ message: 'Descrição inválida ou não informado' })
   @MaxLength(1000, {

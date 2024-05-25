@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import {
   ValidationArguments,
   ValidationOptions,
@@ -6,20 +7,22 @@ import {
   ValidatorConstraintInterface,
   registerDecorator,
 } from 'class-validator';
-import { UsuariosRepository } from '../usuarios.repository';
+import { Repository } from 'typeorm';
+import { UsuarioEntity } from '../usuario.entity';
 
 @Injectable()
 @ValidatorConstraint({ async: true })
-export class ExisteUsuarioByIdValidator
-  implements ValidatorConstraintInterface
-{
-  constructor(private repository: UsuariosRepository) {}
+export class ExisteUsuarioByIdValidator implements ValidatorConstraintInterface {
+  constructor(
+    @InjectRepository(UsuarioEntity)
+    private readonly repository: Repository<UsuarioEntity>,
+  ) {}
 
   public async validate(
     value: any,
     validationArguments?: ValidationArguments,
   ): Promise<boolean> {
-    const usuarioExisteComId = await this.repository.existeComId(value);
+    const usuarioExisteComId = await this.repository.existsBy({ id: value });
     return usuarioExisteComId;
   }
 }
